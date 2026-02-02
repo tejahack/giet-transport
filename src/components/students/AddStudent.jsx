@@ -116,13 +116,14 @@ const AddStudent = () => {
 
         } catch (error) {
             console.error('Registration Error:', error);
+            setLoading(false); // Reset immediately in catch
 
             let errorMsg = error.message;
             if (error.message?.includes('already registered')) {
-                errorMsg = "This email is already registered.";
+                errorMsg = "Account already exists! Please check the Students list to ensure their record is complete.";
             }
 
-            toast.error(errorMsg);
+            toast.error(errorMsg, { duration: 4000 });
         } finally {
             setLoading(false);
         }

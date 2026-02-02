@@ -25,18 +25,19 @@ export const AuthProvider = ({ children }) => {
                 .from('users')
                 .select('role, name')
                 .eq('id', userId)
-                .single();
+                .maybeSingle(); // Use maybeSingle to avoid 406/error if not found
 
             if (error) {
+                console.log('User not found in database by ID, checking by email...');
                 // User might not exist in users table yet, check by email
                 const { data: emailData, error: emailError } = await supabase
                     .from('users')
                     .select('role, name')
                     .eq('email', email)
-                    .single();
+                    .maybeSingle(); // Use maybeSingle to avoid 406/error if not found
 
                 if (emailError || !emailData) {
-                    console.log('User not found in database');
+                    console.log('User not found in database by email');
                     return { role: null, name: null };
                 }
                 return { role: emailData.role, name: emailData.name };
@@ -44,28 +45,42 @@ export const AuthProvider = ({ children }) => {
 
             return { role: data?.role || null, name: data?.name || null };
         } catch (error) {
-            console.error('Error checking user role:', error);
+            // Quiet the error if it's just a 406/404 from Supabase
+            if (error.code !== 'PGRST116') {
+                console.error('Error checking user role:', error);
+            }
             return { role: null, name: null };
         }
     };
 
     // Listen to Supabase auth state changes
     useEffect(() => {
-        // Get initial session
-        supabase.auth.getSession().then(async ({ data: { session } }) => {
-            if (session?.user) {
-                const { role, name } = await checkUserRole(session.user.id, session.user.email);
-                if (ALLOWED_ROLES.includes(role)) {
-                    setCurrentUser({ ...session.user, displayName: name });
-                    setUserRole(role);
-                } else {
-                    await supabase.auth.signOut();
-                    setCurrentUser(null);
-                    setUserRole(null);
+        let mounted = true;
+
+        const initializeAuth = async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+
+                if (session?.user && mounted) {
+                    const { role, name } = await checkUserRole(session.user.id, session.user.email);
+                    if (ALLOWED_ROLES.includes(role)) {
+                        setCurrentUser({ ...session.user, displayName: name });
+                        setUserRole(role);
+                    } else {
+                        // Not an allowed role, sign out
+                        await supabase.auth.signOut();
+                        setCurrentUser(null);
+                        setUserRole(null);
+                    }
                 }
+            } catch (error) {
+                console.error('Initialization error:', error);
+            } finally {
+                if (mounted) setLoading(false);
             }
-            setLoading(false);
-        });
+        };
+
+        initializeAuth();
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -85,15 +100,20 @@ export const AuthProvider = ({ children }) => {
             } else if (event === 'SIGNED_OUT') {
                 setCurrentUser(null);
                 setUserRole(null);
+                setLoading(false);
             }
         });
 
-        return () => subscription.unsubscribe();
+        return () => {
+            mounted = false;
+            subscription.unsubscribe();
+        };
     }, []);
 
     // Login with email and password
     const loginWithEmail = async (email, password) => {
         try {
+            setLoading(true);
             const { data, error } = await supabase.auth.signInWithPassword({
                 email,
                 password
@@ -119,12 +139,15 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             console.error('Login error:', error);
             throw error;
+        } finally {
+            setLoading(false);
         }
     };
 
     // Logout
     const logout = async () => {
         try {
+            setLoading(true);
             await supabase.auth.signOut();
             sessionStorage.removeItem('admin_email');
             sessionStorage.removeItem('admin_password');
@@ -132,6 +155,8 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             console.error('Logout error:', error);
             throw error;
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -153,7 +178,7 @@ export const AuthProvider = ({ children }) => {
 
     return (
         <AuthContext.Provider value={value}>
-            {!loading && children}
+            {children}
         </AuthContext.Provider>
     );
 };
