@@ -11,11 +11,12 @@ CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,                    -- Firebase UID (must match Firebase Auth UID)
   email TEXT NOT NULL UNIQUE,
   name TEXT,
-  role TEXT NOT NULL CHECK (role IN ('admin', 'driver', 'student')),
+  role TEXT NOT NULL CHECK (role IN ('admin', 'faculty', 'driver', 'student')),
   phone TEXT,
   license_no TEXT,                        -- Only for drivers
   photo_url TEXT,                         -- Google profile photo or uploaded photo
   is_blocked BOOLEAN DEFAULT false,       -- Only used for students
+  roll_number TEXT,                       -- Only for students
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 

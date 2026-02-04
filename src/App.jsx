@@ -11,6 +11,7 @@ import AddStudent from './components/students/AddStudent';
 import RoutesPage from './pages/RoutesPage';
 import LiveMapPage from './pages/LiveMapPage';
 import AlertsPage from './pages/AlertsPage';
+import FeedbackPage from './pages/FeedbackPage';
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
                     <Route path="/routes" element={<RoutesPage />} />
                     <Route path="/live-map" element={<LiveMapPage />} />
                     <Route path="/alerts" element={<AlertsPage />} />
+                    <Route path="/feedback" element={<FeedbackPage />} />
                     <Route path="/" element={<Navigate to="/dashboard" replace />} />
                   </Route>
                 </Routes>

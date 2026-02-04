@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, UserCog, Map, Route, Bell } from 'lucide-react';
+import { LayoutDashboard, Users, UserCog, Map, Route, Bell, MessageSquare } from 'lucide-react';
 
 const Sidebar = () => {
     const navItems = [
@@ -9,6 +9,7 @@ const Sidebar = () => {
         { path: '/routes', icon: Route, label: 'Routes' },
         { path: '/live-map', icon: Map, label: 'Live Map' },
         { path: '/alerts', icon: Bell, label: 'Send Alert' },
+        { path: '/feedback', icon: MessageSquare, label: 'Feedback' },
     ];
 
     return (
